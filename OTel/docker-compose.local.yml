@@ -1,6 +1,18 @@
+# LOCAL variant (maintainer setup) — mirrors the original project layout.
+#
+# Here RabbitMQ / Redis are NOT bundled; they are expected to already be running
+# on an external `shared_net` Docker network (started from a separate infra
+# stack — e.g. `rabbit/docker-compose.local.yml`). Only the traced app services
+# and Jaeger are defined here.
+#
+#   docker network create shared_net      # once
+#   docker compose -f OTel/docker-compose.local.yml up --build
+
 services:
   publisher:
-    build: .
+    build:
+      context: ..
+      dockerfile: OTel/Dockerfile.local
     command: uv run uvicorn publisher.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
@@ -13,7 +25,9 @@ services:
       - jaeger
 
   consumer:
-    build: .
+    build:
+      context: ..
+      dockerfile: OTel/Dockerfile.local
     command: uv run python -m consumer.worker
     environment:
       RABBITMQ_HOST: rabbitmq
@@ -24,7 +38,9 @@ services:
       - jaeger
 
   llm_worker:
-    build: .
+    build:
+      context: ..
+      dockerfile: OTel/Dockerfile.local
     command: uv run python -m llm_worker.worker
     environment:
       RABBITMQ_HOST: rabbitmq
