@@ -1,0 +1,51 @@
+# distributed-systems-lab
+
+A hands-on lab for exploring core **Software Engineering roles and frameworks** — backend, AI/ML engineering, DevOps, and data engineering — through small, simple, runnable examples.
+
+The goal isn't theory. Each folder is a minimal, working mock project you can spin up in minutes, see real results (traces, logs, metrics), and understand *why* the concept matters — before applying it to real systems.
+
+## What's in here
+
+| Area | Frameworks/Tools | What you'll find |
+|---|---|---|
+| **Messaging** | RabbitMQ, Celery | Publisher/consumer patterns, async task queues |
+| **Observability** | OpenTelemetry, Jaeger, Prometheus, Grafana | Instrumentation, distributed tracing, metrics |
+| **Caching** | Redis | Cache-aside, write-back patterns |
+| **Mock projects** | FastAPI + all of the above combined | End-to-end pipelines simulating real-world scenarios (e.g. an email processing pipeline, a bakery process) |
+
+## Structure
+
+```
+distributed-systems-lab/
+├── messaging/       # RabbitMQ, Celery examples
+├── observability/   # OpenTelemetry, Jaeger, Prometheus experiments
+├── caching/         # Redis patterns
+└── mock-projects/   # Combined end-to-end examples (email pipeline, bakery, etc.)
+```
+
+## Philosophy
+
+- **Simple over complete.** Every example is intentionally minimal — just enough code to see the concept work.
+- **Runnable in minutes.** Docker Compose where needed, plain scripts where not.
+- **See it, don't just read it.** Every example produces something visible — a trace in Jaeger, a log line, a dashboard — not just passing tests.
+- **Build up gradually.** Start with one moving part (a single traced function), then combine (queue + tracing + caching) once each piece is understood on its own.
+
+## Getting started
+
+Each subfolder has its own short README with:
+1. What the example demonstrates
+2. The code, in full
+3. The exact commands to run it
+4. What to expect when you look at the results
+
+Start with `observability/` if you're new to tracing — it's the foundation most other examples build on.
+
+## Requirements
+
+- Docker & Docker Compose
+- [uv](https://github.com/astral-sh/uv) for Python dependency management
+- A running `shared_net` Docker network (`docker network create shared_net`)
+
+## Roadmap
+
+More examples will be added over time covering additional SWE, AI Engineering, DevOps, and Data Engineering topics as they come up in study/interview prep.
