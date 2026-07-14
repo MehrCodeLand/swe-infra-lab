@@ -1,7 +1,10 @@
+import os
 import pika
 import json
 import requests
 import sqlite3  # simple local DB for this example — swap for Postgres later
+
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 
 # --- Simple DB setup ---
 conn = sqlite3.connect("responses.db", check_same_thread=False)
@@ -40,7 +43,7 @@ def callback(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 def main():
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_HOST))
     channel = connection.channel()
     channel.queue_declare(queue='email_queue', durable=True)
     channel.basic_qos(prefetch_count=10)  # process one at a time (safe default)

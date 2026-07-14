@@ -1,5 +1,8 @@
+import os
 import pika
 import json
+
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 
 def read_emails(filepath):
     with open(filepath, 'r') as f:
@@ -7,7 +10,7 @@ def read_emails(filepath):
     return [{"id": i, "content": line.strip()} for i, line in enumerate(lines) if line.strip()]
 
 def publish_emails(emails):
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_HOST))
     channel = connection.channel()
     channel.queue_declare(queue='email_queue', durable=True)
 

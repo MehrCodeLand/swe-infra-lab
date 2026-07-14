@@ -11,8 +11,8 @@
 services:
   publisher:
     build:
-      context: ..
-      dockerfile: OTel/Dockerfile.local
+      context: .
+      dockerfile: Dockerfile.local
     command: uv run uvicorn publisher.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
@@ -26,8 +26,8 @@ services:
 
   consumer:
     build:
-      context: ..
-      dockerfile: OTel/Dockerfile.local
+      context: .
+      dockerfile: Dockerfile.local
     command: uv run python -m consumer.worker
     environment:
       RABBITMQ_HOST: rabbitmq
@@ -39,8 +39,8 @@ services:
 
   llm_worker:
     build:
-      context: ..
-      dockerfile: OTel/Dockerfile.local
+      context: .
+      dockerfile: Dockerfile.local
     command: uv run python -m llm_worker.worker
     environment:
       RABBITMQ_HOST: rabbitmq
