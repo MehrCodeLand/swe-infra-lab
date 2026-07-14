@@ -1,0 +1,70 @@
+# Self-contained OpenTelemetry tracing pipeline.
+#
+# Everything a new user needs is bundled here — RabbitMQ (message broker),
+# Jaeger (trace UI) and the three traced services. Just run:
+#
+#   docker compose -f OTel/docker-compose.yml up --build
+#
+# Then:
+#   * send test traffic:  uv run python OTel/load_test.py
+#   * open Jaeger UI:      http://localhost:16686   (service: "publisher")
+#   * RabbitMQ mgmt UI:    http://localhost:15672    (guest / guest)
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC receiver
+
+  publisher:
+    build:
+      context: ..
+      dockerfile: OTel/Dockerfile
+    command: uv run uvicorn publisher.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  consumer:
+    build:
+      context: ..
+      dockerfile: OTel/Dockerfile
+    command: uv run python -m consumer.worker
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  llm_worker:
+    build:
+      context: ..
+      dockerfile: OTel/Dockerfile
+    command: uv run python -m llm_worker.worker
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      jaeger:
+        condition: service_started

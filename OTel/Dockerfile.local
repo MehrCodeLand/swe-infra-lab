@@ -1,0 +1,19 @@
+# LOCAL variant of the OTel image (for the maintainer's own setup).
+#
+# This is functionally the same build as ./Dockerfile. It exists so the
+# docker-compose.local.yml stack can be built/run independently while you point
+# the services at RabbitMQ / Redis / Jaeger that already run on your own
+# external `shared_net` network (started from a separate infra stack), instead
+# of the self-contained services bundled in docker-compose.yml.
+FROM python:3.11-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-cache
+
+COPY OTel/ ./
+
+CMD ["uv", "run", "uvicorn", "publisher.main:app", "--host", "0.0.0.0", "--port", "8000"]
