@@ -1,0 +1,17 @@
+# LOCAL variant of the rabbit image (for the maintainer's own setup).
+#
+# Same self-contained build as ./Dockerfile. Used by docker-compose.local.yml,
+# which puts the app + RabbitMQ + Redis on an external `shared_net` network so
+# other stacks (e.g. the OTel `*.local` pipeline) can share the same broker.
+FROM python:3.11-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-cache
+
+COPY . .
+
+CMD ["uv", "run", "python", "consumer.py"]

@@ -1,11 +1,14 @@
-# Self-contained infrastructure for the RabbitMQ / Celery / Redis examples.
+# Self-contained RabbitMQ / Celery / Redis stack.
 #
-# These examples run as plain Python scripts on your host and connect to
-# localhost. Start the infra first, then run the scripts:
+# Brings up the infrastructure (RabbitMQ + Redis) AND the long-running workers
+# (a Celery worker and the raw RabbitMQ consumer). Just run:
 #
-#   docker compose -f rabbit/docker-compose.yml up -d
-#   uv run python rabbit/redis_cache.py        # Redis cache-aside demo
-#   ...see rabbit/README.md for the rest...
+#   docker compose -f rabbit/docker-compose.yml up --build
+#
+# The one-shot scripts are run on demand against the same stack, e.g.:
+#   docker compose -f rabbit/docker-compose.yml run --rm producer uv run python produce.py
+#   docker compose -f rabbit/docker-compose.yml run --rm producer uv run python run_task.py
+#   docker compose -f rabbit/docker-compose.yml run --rm producer uv run python redis_cache.py
 #
 #   RabbitMQ management UI: http://localhost:15672  (guest / guest)
 
@@ -13,7 +16,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"     # AMQP (pika / celery connect here)
+      - "5672:5672"     # AMQP
       - "15672:15672"   # management UI
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -24,4 +27,43 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"     # celery broker/backend + redis_cache.py
+      - "6379:6379"
+
+  # Raw RabbitMQ consumer (waits for messages published by produce.py).
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uv run python consumer.py
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # Celery worker (runs tasks queued by run_task.py).
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uv run celery -A tasks worker --loglevel=info
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+
+  # Helper service for running the one-shot scripts (see header). Not started by
+  # `up`; use `docker compose run --rm producer ...`.
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["tools"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started

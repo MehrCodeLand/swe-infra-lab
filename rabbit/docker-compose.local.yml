@@ -1,11 +1,11 @@
 # LOCAL variant (maintainer setup).
 #
-# Publishes RabbitMQ + Redis onto an external `shared_net` network so other
-# stacks — e.g. the OTel pipeline's `OTel/docker-compose.local.yml` — can reach
-# them by service name instead of localhost.
+# Puts RabbitMQ + Redis + the workers on an external `shared_net` network so
+# other stacks — e.g. the OTel pipeline's `OTel/docker-compose.local.yml` — can
+# reach the same broker by service name.
 #
 #   docker network create shared_net      # once
-#   docker compose -f rabbit/docker-compose.local.yml up -d
+#   docker compose -f rabbit/docker-compose.local.yml up --build
 
 services:
   rabbitmq:
@@ -22,6 +22,30 @@ services:
       - "6379:6379"
     networks:
       - shared_net
+
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    command: uv run python consumer.py
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    networks:
+      - shared_net
+    depends_on:
+      - rabbitmq
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    command: uv run celery -A tasks worker --loglevel=info
+    environment:
+      REDIS_HOST: redis
+    networks:
+      - shared_net
+    depends_on:
+      - redis
 
 networks:
   shared_net:
